@@ -2,7 +2,6 @@ import React, {
   useMemo,
   forwardRef,
   useImperativeHandle,
-  PropsWithChildren,
 } from 'react'
 import { router } from '@inertiajs/react'
 import type { PaginationMeta } from '@/types'
@@ -21,7 +20,7 @@ interface PaginationProps {
   children?: React.ReactNode | ((helpers: PaginationHandle) => React.ReactNode)
 }
 
-const Pagination = forwardRef<PaginationHandle, PropsWithChildren<PaginationProps>>(
+const Pagination = forwardRef<PaginationHandle, PaginationProps>(
   ({ meta, onPrevPage, onNextPage, children }, ref) => {
     const currentPage = meta?.current_page ?? 1
     const pageCount = meta?.last_page ?? 1
@@ -31,22 +30,20 @@ const Pagination = forwardRef<PaginationHandle, PropsWithChildren<PaginationProp
     const canNextPage = currentPage < pageCount
 
     const handleClickPrevPage = () => {
-      if (canPreviousPage) {
-        const prev = links.find((link) => link.label === '&laquo; Previous')
-        if (prev?.url) {
-          router.get(prev.url, {}, { preserveScroll: true })
-          onPrevPage?.()
-        }
+      if (!canPreviousPage) return
+      const prev = links.find((link) => link.label === '&laquo; Previous')
+      if (prev?.url) {
+        router.get(prev.url, {}, { preserveScroll: true })
+        onPrevPage?.()
       }
     }
 
     const handleClickNextPage = () => {
-      if (canNextPage) {
-        const next = links.find((link) => link.label === 'Next &raquo;')
-        if (next?.url) {
-          router.get(next.url, {}, { preserveScroll: true })
-          onNextPage?.()
-        }
+      if (!canNextPage) return
+      const next = links.find((link) => link.label === 'Next &raquo;')
+      if (next?.url) {
+        router.get(next.url, {}, { preserveScroll: true })
+        onNextPage?.()
       }
     }
 
@@ -69,9 +66,7 @@ const Pagination = forwardRef<PaginationHandle, PropsWithChildren<PaginationProp
 
     return (
       <>
-        {typeof children === 'function'
-          ? children(paginationHelpers)
-          : children}
+        {typeof children === 'function' ? children(paginationHelpers) : children}
       </>
     )
   }

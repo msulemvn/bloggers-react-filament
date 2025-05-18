@@ -10,14 +10,6 @@ use App\Http\Resources\PostResource;
 
 class PostController extends Controller
 {
-    public function index()
-    {
-        $posts = Post::latest()->paginate();
-        return Inertia::render('welcome', [
-            'posts' => PostResource::collection($posts),
-        ]);
-    }
-
     public function show(Post $post): Response
     {
         $post->load([

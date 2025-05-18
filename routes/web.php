@@ -7,7 +7,8 @@ use App\Http\Controllers\CommentController;
 use App\Http\Controllers\HomeController;
 
 Route::get('/', [HomeController::class, 'index'])->name('home');
-Route::get('/posts/{post}', [PostController::class, 'show'])->name('post.show');
+Route::get('/posts/{post}', [PostController::class, 'show'])->name('posts.show');
+Route::get('/search', [HomeController::class, 'search'])->name('posts.search');
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('dashboard', function () {

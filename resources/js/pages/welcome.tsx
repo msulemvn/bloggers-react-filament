@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react'
+import React, { useState, useRef } from 'react'
 import axios from 'axios'
 import { Head, Link } from '@inertiajs/react'
 import { route } from 'ziggy-js'
@@ -8,7 +8,8 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { AspectRatio } from '@/components/ui/aspect-ratio'
 import { Button } from '@/components/ui/button'
 import { Command, CommandInput } from '@/components/ui/command'
-import Pagination from '@/components/pagination'
+import Pagination, { PaginationHandle } from '@/components/pagination'
+import { toast } from 'sonner'
 
 type Post = {
     id: number
@@ -32,41 +33,36 @@ type Props = {
     }
 }
 
-type PaginationHandle = {
-    handleClickNextPage: () => void
-    handleClickPrevPage: () => void
-    canPreviousPage: boolean
-    canNextPage: boolean
-}
-
 const Welcome: React.FC<Props> = ({ auth, posts: initialPosts }) => {
     const [query, setQuery] = useState('')
-    const [posts, setPosts] = useState<Post[]>(initialPosts?.data ?? [])
-    const [meta, setMeta] = useState<Meta>(initialPosts?.meta ?? { current_page: 1, last_page: 1 })
+    const [posts, setPosts] = useState<Post[]>(initialPosts.data)
+    const [meta, setMeta] = useState<Meta>(initialPosts.meta)
     const paginationRef = useRef<PaginationHandle>(null)
 
     const handleSearch = async () => {
         try {
-            const queryParams = new URLSearchParams({ q: query }).toString()
-            const url = route('home.blog.search') + `?${queryParams}`
-
-            const response = await axios.get(url)
-            if (response.status === 200) {
-                setPosts(response.data.data)
-                setMeta(response.data.meta)
-            }
-        } catch (error) {
-            console.error(error)
+            const url = `${route('posts.search')}?q=${encodeURIComponent(query)}&page=1`
+            const { data } = await axios.get(url, {
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    Accept: 'application/json',
+                },
+            })
+            setPosts(data.data)
+            setMeta(data.meta)
+        } catch (error: any) {
+            toast.error(error?.response?.data?.message || 'Something went wrong.')
         }
     }
+
+    const canPreviousPage = meta.current_page > 1
+    const canNextPage = meta.current_page < meta.last_page
 
     return (
         <>
             <Head title="Home" />
-            <SimpleAppHeader
-                showNav={true}
-                authenticated={auth}
-            />
+            <SimpleAppHeader showNav authenticated={auth} />
+
             <section className="flex items-center justify-center h-80 bg-gray-100 text-black">
                 <div className="text-center">
                     <h1 className="text-5xl font-bold sm:text-6xl">Bloggers</h1>
@@ -89,15 +85,16 @@ const Welcome: React.FC<Props> = ({ auth, posts: initialPosts }) => {
                 <div className="max-w-7xl mx-auto px-4">
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                         {posts.map((card) => (
-                            <Link key={card.id} href={route('post.show', card.slug)}>
+                            <Link key={card.id} href={route('posts.show', card.slug)}>
                                 <Card className="group overflow-hidden rounded-lg shadow-md transition-all duration-300 hover:shadow-xl hover:-translate-y-1">
-                                    <CardHeader className="!aspect-[2/1] w-full p-0 relative aspect-video overflow-hidden">
+                                    <CardHeader className="!aspect-[2/1] w-full p-0 relative overflow-hidden">
                                         <AspectRatio ratio={16 / 9}>
                                             <img
                                                 src={card.feature_image}
                                                 alt={card.title}
                                                 className="w-full h-full object-contain"
-                                            />                                        </AspectRatio>
+                                            />
+                                        </AspectRatio>
                                         <PlaceholderPattern className="w-full h-full" />
                                     </CardHeader>
                                     <CardContent className="p-4">
@@ -113,24 +110,23 @@ const Welcome: React.FC<Props> = ({ auth, posts: initialPosts }) => {
                         ))}
                     </div>
 
-                    <Pagination meta={meta} ref={paginationRef}>
-                        <div className="mt-20">
-                            <nav role="navigation" aria-label="Pagination Navigation" className="flex justify-between">
-                                <Button
-                                    onClick={() => paginationRef.current?.handleClickPrevPage()}
-                                    disabled={!paginationRef.current?.canPreviousPage}
-                                >
-                                    ← Previous
-                                </Button>
-                                <Button
-                                    onClick={() => paginationRef.current?.handleClickNextPage()}
-                                    disabled={!paginationRef.current?.canNextPage}
-                                >
-                                    Next →
-                                </Button>
-                            </nav>
-                        </div>
-                    </Pagination>
+                    <Pagination meta={meta} ref={paginationRef} />
+                    <div className="mt-20">
+                        <nav role="navigation" aria-label="Pagination Navigation" className="flex justify-between">
+                            <Button
+                                onClick={() => paginationRef.current?.handleClickPrevPage()}
+                                disabled={!canPreviousPage}
+                            >
+                                ← Previous
+                            </Button>
+                            <Button
+                                onClick={() => paginationRef.current?.handleClickNextPage()}
+                                disabled={!canNextPage}
+                            >
+                                Next →
+                            </Button>
+                        </nav>
+                    </div>
                 </div>
             </main>
 
@@ -148,10 +144,16 @@ const Welcome: React.FC<Props> = ({ auth, posts: initialPosts }) => {
                 <div className="container mx-auto text-center">
                     <p className="text-gray-700 dark:text-gray-300">&copy; 2025 YourCompany. All rights reserved.</p>
                     <div className="flex justify-center space-x-6 mt-4">
-                        <a href="#" className="text-sm text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white">
+                        <a
+                            href="#"
+                            className="text-sm text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white"
+                        >
                             Privacy Policy
                         </a>
-                        <a href="#" className="text-sm text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white">
+                        <a
+                            href="#"
+                            className="text-sm text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white"
+                        >
                             Terms of Service
                         </a>
                     </div>

@@ -91,5 +91,18 @@ class Post extends Model
         return $this->morphMany(Comment::class, 'commentable')
             ->where('status', 'Approved')
             ->whereNull('parent_comment_id');
-    }   
+    }
+
+    public function scopeSearch(Builder $query, ?string $term)
+    {
+        if (!$term) {
+            return $query;
+        }
+
+        return $query->where(function ($q) use ($term) {
+            $q->where('title', 'like', "%{$term}%")
+                ->orWhere('description', 'like', "%{$term}%")
+                ->orWhere('content', 'like', "%{$term}%");
+        });
+    }
 }
