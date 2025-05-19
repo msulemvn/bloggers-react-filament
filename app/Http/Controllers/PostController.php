@@ -24,7 +24,7 @@ class PostController extends Controller
             abort(404);
         }
 
-        return Inertia::render('post/show', [
+        return Inertia::render('posts/show', [
             'post' => PostResource::make($post),
         ]);
     }

@@ -25,8 +25,8 @@ class HomeController extends Controller
 
     public function search()
     {
-        $searchTerm = request('q');
-        $posts = Post::query()->showablePost()->search($searchTerm)->paginate(config('app.per_page'));
+        $q = request()->validate(['q' => 'nullable|string'])['q'] ?? '';
+        $posts = Post::query()->showablePost()->search($q)->paginate(config('app.per_page'));
 
         return response()->json([
             'data' => PostResource::collection($posts),
