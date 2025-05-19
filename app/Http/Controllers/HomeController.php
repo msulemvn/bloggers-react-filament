@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Http\Resources\PostResource;
 use App\Models\Post;
-use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 
 class HomeController extends Controller
@@ -19,7 +18,6 @@ class HomeController extends Controller
         $posts = Post::query()->showablePost();
         return Inertia::render('welcome', [
             'posts' => PostResource::collection($posts->paginate(config('app.per_page'))),
-            'auth' => request()->user(),
         ]);
     }
 
@@ -28,12 +26,8 @@ class HomeController extends Controller
         $q = request()->validate(['q' => 'nullable|string'])['q'] ?? '';
         $posts = Post::query()->showablePost()->search($q)->paginate(config('app.per_page'));
 
-        return response()->json([
-            'data' => PostResource::collection($posts),
-            'meta' => [
-                'current_page' => $posts->currentPage(),
-                'last_page' => $posts->lastPage(),
-            ],
+        return Inertia::render('welcome', [
+            'posts' => PostResource::collection($posts),
         ]);
     }
 }

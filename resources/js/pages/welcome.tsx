@@ -1,6 +1,5 @@
 import React, { useState, useRef } from 'react'
-import axios from 'axios'
-import { Head, Link } from '@inertiajs/react'
+import { Head, Link, router } from '@inertiajs/react'
 import { route } from 'ziggy-js'
 import { SimpleAppHeader } from '@/components/simple-app-header'
 import { PlaceholderPattern } from '@/components/ui/placeholder-pattern'
@@ -25,8 +24,17 @@ type Meta = {
     [key: string]: any
 }
 
+type User = {
+    id: number
+    name: string
+    email: string
+    // You can add any other fields as required
+}
+
 type Props = {
-    auth: any
+    auth: {
+        user: User | null
+    }
     posts: {
         data: Post[]
         meta: Meta
@@ -39,20 +47,15 @@ const Welcome: React.FC<Props> = ({ auth, posts: initialPosts }) => {
     const [meta, setMeta] = useState<Meta>(initialPosts.meta)
     const paginationRef = useRef<PaginationHandle>(null)
 
-    const handleSearch = async () => {
-        try {
-            const url = `${route('posts.search')}?q=${encodeURIComponent(query)}&page=1`
-            const { data } = await axios.get(url, {
-                headers: {
-                    'X-Requested-With': 'XMLHttpRequest',
-                    Accept: 'application/json',
-                },
-            })
-            setPosts(data.data)
-            setMeta(data.meta)
-        } catch (error: any) {
-            toast.error(error?.response?.data?.message || 'Something went wrong.')
-        }
+    const handleSearch = () => {
+        router.get(route('posts.search'), { q: query, page: 1 }, {
+            preserveScroll: true,
+            preserveState: true,
+            replace: true,
+            onError: (errors) => {
+                toast.error(errors.message || 'Something went wrong.')
+            },
+        })
     }
 
     const canPreviousPage = meta.current_page > 1
@@ -61,8 +64,7 @@ const Welcome: React.FC<Props> = ({ auth, posts: initialPosts }) => {
     return (
         <>
             <Head title="Home" />
-            <SimpleAppHeader showNav authenticated={auth} />
-
+            <SimpleAppHeader showNav authenticated={!!auth.user} />
             <section className="flex items-center justify-center h-80 bg-gray-100 text-black">
                 <div className="text-center">
                     <h1 className="text-5xl font-bold sm:text-6xl">Bloggers</h1>
@@ -80,7 +82,6 @@ const Welcome: React.FC<Props> = ({ auth, posts: initialPosts }) => {
                     </div>
                 </div>
             </section>
-
             <main className="flex-grow py-12 bg-white dark:bg-gray-950">
                 <div className="max-w-7xl mx-auto px-4">
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -109,7 +110,6 @@ const Welcome: React.FC<Props> = ({ auth, posts: initialPosts }) => {
                             </Link>
                         ))}
                     </div>
-
                     <Pagination meta={meta} ref={paginationRef} />
                     <div className="mt-20">
                         <nav role="navigation" aria-label="Pagination Navigation" className="flex justify-between">
@@ -129,7 +129,6 @@ const Welcome: React.FC<Props> = ({ auth, posts: initialPosts }) => {
                     </div>
                 </div>
             </main>
-
             <section className="flex items-center justify-center h-80 bg-gray-100 text-black">
                 <div className="text-center">
                     <h1 className="text-4xl font-bold">Ready to get started?</h1>
@@ -139,7 +138,6 @@ const Welcome: React.FC<Props> = ({ auth, posts: initialPosts }) => {
                     </Button>
                 </div>
             </section>
-
             <footer className="py-8 px-4 bg-white dark:bg-gray-900">
                 <div className="container mx-auto text-center">
                     <p className="text-gray-700 dark:text-gray-300">&copy; 2025 YourCompany. All rights reserved.</p>
